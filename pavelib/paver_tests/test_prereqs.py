@@ -5,7 +5,7 @@ Tests covering the Open edX Paver prequisites installation workflow
 import os
 import unittest
 
-from mock import call, patch
+from mock import call, patch, Mock
 from paver.easy import BuildFailure
 
 from pavelib.paver_tests.utils import PaverTestCase, fail_on_npm_install, unexpected_fail_on_npm_install
@@ -86,9 +86,10 @@ class TestPaverNodeInstall(PaverTestCase):
         # Ensure prereqs will be run
         os.environ['NO_PREREQ_INSTALL'] = 'false'
 
-        patcher = patch('pavelib.prereqs.sh', return_value=True)
-        self._mock_paver_sh = patcher.start()
+        patcher = patch('subprocess.Popen', return_value=Mock())
+        self._mock_popen = patcher.start()
         self.addCleanup(patcher.stop)
+        self.npm_command = 'npm install --verbose'
 
     def test_npm_install_with_subprocess_error(self):
         """
@@ -96,31 +97,31 @@ class TestPaverNodeInstall(PaverTestCase):
         an npm install error ("cb() never called!"). Test that we can handle
         this kind of failure. For more info see TE-1767.
         """
-        self._mock_paver_sh.side_effect = fail_on_npm_install
+        self._mock_popen.side_effect = fail_on_npm_install
         with self.assertRaises(BuildFailure):
             node_prereqs_installation()
-        actual_calls = self._mock_paver_sh.mock_calls
+        actual_calls = self._mock_popen.mock_calls
 
         # npm install will be called twice
-        self.assertEqual(actual_calls.count(call('npm install')), 2)
+        self.assertEqual(actual_calls.count(call(self.npm_command)), 2)
 
     def test_npm_install_called_once_when_successful(self):
         """
         Vanilla npm install should only be calling npm install one time
         """
         node_prereqs_installation()
-        actual_calls = self._mock_paver_sh.mock_calls
+        actual_calls = self._mock_popen.mock_calls
 
         # when there's no failure, npm install is only called once
-        self.assertEqual(actual_calls.count(call('npm install')), 1)
+        self.assertEqual(actual_calls.count(call(self.npm_command)), 1)
 
     def test_npm_install_with_unexpected_subprocess_error(self):
         """
         If there's some other error, only call npm install once, and raise a failure
         """
-        self._mock_paver_sh.side_effect = unexpected_fail_on_npm_install
+        self._mock_popen.side_effect = unexpected_fail_on_npm_install
         with self.assertRaises(BuildFailure):
             node_prereqs_installation()
-        actual_calls = self._mock_paver_sh.mock_calls
+        actual_calls = self._mock_popen.mock_calls
 
-        self.assertEqual(actual_calls.count(call('npm install')), 1)
+        self.assertEqual(actual_calls.count(call(self.npm_command)), 1)

@@ -30,8 +30,8 @@ class RenderXblockByJournalAccessViewTest(CacheIsolationTestCase, SiteMixin):
     )
 
     @override_switch(JOURNAL_INTEGRATION, True)
-    @mock.patch('openedx.features.journals.views.journal_page.fetch_journal_access')
-    @mock.patch('openedx.features.journals.views.journal_page.render_xblock')
+    @mock.patch('openedx.features.journals.views.journal_xblock.fetch_journal_access')
+    @mock.patch('openedx.features.journals.views.journal_xblock.render_xblock')
     def test_without_journal_access(self, mocked_render_xblock, mocked_journal_access):
         """
         Test the journal page without journal access.
@@ -46,8 +46,8 @@ class RenderXblockByJournalAccessViewTest(CacheIsolationTestCase, SiteMixin):
         self.assertEqual(response.status_code, 403)
 
     @override_switch(JOURNAL_INTEGRATION, True)
-    @mock.patch('openedx.features.journals.views.journal_page.fetch_journal_access')
-    @mock.patch('openedx.features.journals.views.journal_page.render_xblock')
+    @mock.patch('openedx.features.journals.views.journal_xblock.fetch_journal_access')
+    @mock.patch('openedx.features.journals.views.journal_xblock.render_xblock')
     def test_with_journal_access(self, mocked_render_xblock, mocked_journal_access):
         """
         Test the journal page with journal access.

@@ -7,7 +7,7 @@ from django.conf.urls import url
 
 from openedx.features.journals.views.marketing import bundle_about
 from openedx.features.journals.views import learner_dashboard
-from openedx.features.journals.views.journal_page import render_xblock_by_journal_access
+from openedx.features.journals.views.journal_xblock import render_xblock_by_journal_access
 
 urlpatterns = [
     url(r'^bundles/{}/about'.format(r'(?P<bundle_uuid>[0-9a-f-]+)',),

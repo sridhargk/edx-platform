@@ -60,10 +60,6 @@ class UpdateExampleCertificateViewTest(CacheIsolationTestCase):
         )
         self.url = reverse('update_example_certificate')
 
-        # Since rate limit counts are cached, we need to clear
-        # this before each test.
-        cache.clear()
-
     def test_update_example_certificate_success(self):
         response = self._post_to_view(self.cert, download_url=self.DOWNLOAD_URL)
         self._assert_response(response)

@@ -8,6 +8,7 @@
   from django.utils.translation import ugettext as _
   from openedx.core.djangolib.markup import HTML, Text
   from openedx.core.djangolib.js_utils import js_escaped_string, dump_js_escaped_json
+  from util.course import has_certificates_enabled
 %>
 <%block name="title">${_("Checklists")}</%block>
 <%block name="bodyclass">is-signedin course view-checklists</%block>
@@ -39,7 +40,7 @@
             <%
                 course_key = unicode(context_course.id)
                 certificates_url = ''
-                if settings.FEATURES.get("CERTIFICATES_HTML_VIEW") and context_course.cert_html_view_enabled:
+                if has_certificates_enabled(context_course):
                     certificates_url = utils.reverse_course_url('certificates_list_handler', course_key)
             %>
             {

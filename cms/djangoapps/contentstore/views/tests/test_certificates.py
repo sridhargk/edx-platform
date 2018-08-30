@@ -27,9 +27,6 @@ from xmodule.exceptions import NotFoundError
 FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
 FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
 
-FEATURES_WITH_CERTS_DISABLED = settings.FEATURES.copy()
-FEATURES_WITH_CERTS_DISABLED['CERTIFICATES_HTML_VIEW'] = False
-
 CERTIFICATE_JSON = {
     u'name': u'Test certificate',
     u'description': u'Test description',
@@ -836,11 +833,3 @@ class CertificatesDetailHandlerTestCase(
         course = self.store.get_course(self.course.id)
         certificates = course.certificates['certificates']
         self.assertEqual(certificates[0].get('is_active'), False)
-
-    @override_settings(FEATURES=FEATURES_WITH_CERTS_DISABLED)
-    def test_course_certificate_not_available(self):
-        """Test Cert Manager return correct values when certificates are not enabled"""
-        course = self.store.get_course(self.course.id)
-        is_active, certificates = CertificateManager.is_activated(course)
-        self.assertFalse(is_active)
-        self.assertEqual(certificates, [])

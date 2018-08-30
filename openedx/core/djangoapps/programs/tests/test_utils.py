@@ -18,6 +18,7 @@ from entitlements.tests.factories import CourseEntitlementFactory
 from waffle.testutils import override_switch
 
 from lms.djangoapps.certificates.api import MODES
+from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.commerce.tests.test_utils import update_commerce_config
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.grades.tests.utils import mock_passing_grade
@@ -668,6 +669,47 @@ class TestProgramProgressMeter(TestCase):
         # Verify that all programs are complete.
         meter = ProgramProgressMeter(self.site, self.user)
         self.assertEqual(meter.completed_programs, program_uuids)
+
+    @mock.patch(UTILS_MODULE + '.available_date_for_certificate')
+    def test_completed_programs_with_available_dates(self, mock_available_date_for_certificate, mock_get_programs):
+        # First we want to set up the scenario:
+        # - A program that is incomplete (won't show up in result)
+        # - A completed program with the multiple certs, each with specific available dates
+
+        run_no_cert = CourseRunFactory()
+        run_course1_1 = CourseRunFactory()
+        run_course1_2 = CourseRunFactory()
+        run_course2 = CourseRunFactory()
+
+        course_no_cert = CourseFactory(course_runs=[run_no_cert])
+        course1 = CourseFactory(course_runs=[run_course1_1, run_course1_2])
+        course2 = CourseFactory(course_runs=[run_course2])
+
+        program_incomplete = ProgramFactory(courses=[course_no_cert, course1, course2])
+        program_complete = ProgramFactory(courses=[course1, course2])
+        mock_get_programs.return_value = [program_incomplete, program_complete]
+
+        self._create_enrollments(run_no_cert['key'], run_course1_1['key'], run_course1_2['key'], run_course2['key'])
+        GeneratedCertificateFactory(user=self.user, course_id=run_course1_1['key'], status='downloadable')
+        GeneratedCertificateFactory(user=self.user, course_id=run_course1_2['key'], status='downloadable')
+        GeneratedCertificateFactory(user=self.user, course_id=run_course2['key'], status='downloadable')
+
+        def available_date_fake(_course, cert):
+            """ Fake available_date_for_certificate """
+            if str(cert.course_id) == run_course1_1['key']:
+                return datetime.datetime(2018, 1, 1)
+            if str(cert.course_id) == run_course1_2['key']:
+                return datetime.datetime(2017, 1, 1)
+            if str(cert.course_id) == run_course2['key']:
+                return datetime.datetime(2016, 1, 1)
+            return None
+        mock_available_date_for_certificate.side_effect = available_date_fake
+
+        meter = ProgramProgressMeter(self.site, self.user)
+        available_dates = meter.completed_programs_with_available_dates
+        self.assertDictEqual(available_dates, {
+            program_complete['uuid']: datetime.datetime(2017, 1, 1)
+        })
 
     @mock.patch(UTILS_MODULE + '.certificate_api.get_certificates_for_user')
     def test_completed_course_runs(self, mock_get_certificates_for_user, _mock_get_programs):
